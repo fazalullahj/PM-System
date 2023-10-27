@@ -28,7 +28,7 @@ def auth():
         )
         # product
         cursor.execute(
-            "create table if not exists parkinginfo(pID int(20) , carID int(15) primary key, price float(10,2), entry_time datetime , exit_time datetime);"
+            "create table if not exists parkinginfo(pID int(20) , carID varchar(20) primary key, price float(10,2), entry_time datetime , exit_time datetime);"
         )
         if con.is_connected():
             auth_frame.destroy()
@@ -157,10 +157,10 @@ def start():
         carID = carID_entry.get()
         price = float(price_entry.get())
         try:
-            cursor.execute(f"insert into parkinginfo(pID,carID,price,entry_time) values({pID}, {carID},{price}, NOW());")
+            cursor.execute(f"insert into parkinginfo(pID,carID,price,entry_time) values({pID}, '{carID}',{price}, NOW());")
             
             con.commit()
-            messagebox.showinfo("Successful",f"Started Parking for Vehicle : {carID}")
+            messagebox.showinfo("Successful",f"Started Parking for Vehicle : {carID} at parking spot: {pID}")
         except Exception as e:
             messagebox.showerror("Error","Vehicle already entered.")
         
@@ -175,34 +175,43 @@ def end():
     end_frame = CTkFrame(master = end_win, fg_color = "transparent")
     end_frame.pack(expand=True, fill="both", padx=20, pady=20)
     end_frame.place(in_=end_win, anchor="c", relx=0.5, rely=0.5)
-    carID_entry = CTkEntry(master = end_frame,font = Standard)
-    carID_label = CTkLabel(master = end_frame,text = "Vehicle ID",font = Standard)
-    carID_label.pack()
-    carID_entry.pack()
+    ID_label = CTkLabel(master=end_frame, text="Vehicle ID:", font=Standard)
+    ID_label.pack()
+    cost_label = CTkLabel(master = end_frame, text = f"",font=("Times",18,"bold"))
+    
+    cursor.execute("SELECT carID FROM parkinginfo")
+    allIDs = [row[0] for row in cursor.fetchall()]
+    ID_var = StringVar(master = end_frame, value="Select Vehicle ID")
+    ID_menu = CTkOptionMenu(master = end_frame, values=allIDs, variable=ID_var)
+    ID_menu.pack(pady=10)
+    end_label = CTkLabel(master = end_frame,text = "",font = ("Verdana", 16))
+    end_label.pack()
+    cost_label.pack()
     def submit():
-        carID = carID_entry.get()
-        cursor.execute(f"select entry_time,exit_time,price from parkinginfo where carID = {carID}")
-        entry_time,exit_time,price = cursor.fetchone()
-        if exit_time is not None:
-            messagebox.showerror("Already Exited",f"This vehicle has exited at {exit_time}")
-        else: 
-            try:
-                cursor.execute(f'update parkinginfo set exit_time = NOW() where carID = {carID};')
-                con.commit()
-                cursor.execute(f"select entry_time,exit_time,price from parkinginfo where carID = {carID}")
-                entry_time,exit_time,price = cursor.fetchone()
+        carID = ID_var.get()
+        cursor.execute(f"select entry_time,exit_time,price from parkinginfo where carID = '{carID}'")
+        
+ 
+        try:
+            entry_time,exit_time,price = cursor.fetchone()
+            cursor.execute(f'update parkinginfo set exit_time = NOW() where carID = "{carID}";')
+            con.commit()
+            cursor.execute(f"select entry_time,exit_time,price from parkinginfo where carID = '{carID}'")
+            entry_time,exit_time,price = cursor.fetchone()
 
-                end_label = CTkLabel(master = end_frame, text = f"The vehicle with ID: {carID} \n entered at {entry_time} and \nexited at : {exit_time}.\n",font = Standard)
-                end_label.pack()
-                time_difference = exit_time - entry_time
-                from datetime import datetime
-                hours = time_difference.total_seconds() / 3600.0
-                cost = round((float(price)*hours),2)
+            end_label.configure( text = f"The vehicle with ID: {carID} \n entered at {entry_time} and \nexited at : {exit_time}.\n")
+            end_label.pack()
+            time_difference = exit_time - entry_time
+            from datetime import datetime
+            hours = time_difference.total_seconds() / 3600.0
+            cost = round((float(price)*hours),2)
             
-                messagebox.showinfo("Success", "Exited")
-                cost_label = CTkLabel(master = end_frame, text = f"Cost : {cost} AED",font=Standard).pack()
-            except Exception as e:
-                messagebox.showerror("Error", "Not found")
+            cost_label.configure(text = f"Cost : {cost} AED")
+            cursor.execute(f"DELETE from parkinginfo where carID='{carID}'")
+            con.commit()
+            return
+        except Exception as e:
+            messagebox.showerror("Error", f"Not found \n{e}")
 
     end_button = CTkButton(master = end_frame,text = 'End',command = submit, font = Bfont)
     end_button.pack(pady =5)
