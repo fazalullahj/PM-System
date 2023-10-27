@@ -7,9 +7,9 @@ root = CTk()
 root.title("Parking Management System")
 set_default_color_theme("green")
 set_appearance_mode("light")
-Heading = CTkFont(family="Arial Black", size=28, weight="bold")
-Bfont = CTkFont(family="Arial", size=16, weight="bold")
-Standard = CTkFont(family="Arial", size=15, weight="bold")
+Heading = CTkFont(family="Arial Black", size=34, weight="bold")
+Bfont = CTkFont(family="Verdana", size=22, weight="bold")
+Standard = CTkFont(family="Verdana", size=19, weight="normal")
 root.geometry('450x450')
 
 def auth():
@@ -73,7 +73,7 @@ def sign_in():
                     currentUser = uname
                     sign_in_label = CTkLabel(
                         master=menu_frame,
-                        text=f"Signed in ⁛ {currentUser.capitalize()} ⁛",
+                        text=f"Signed in as {currentUser.capitalize()} ",
                         font=Standard,
                     )
                     sign_in_label.pack()
@@ -88,7 +88,7 @@ def sign_in():
                 quit()
 
         sign_in_submit = CTkButton(
-            master=sign_in_frame, text="Submit", command=submit, font=Standard
+            master=sign_in_frame, text="Submit", command=submit, font=Bfont
         )
         sign_in_submit.pack(pady=10)
 
@@ -127,7 +127,7 @@ def sign_up():
         except Exception as e:
             messagebox.showerror("Error", f"Username not available \n {e}")
 
-    sign_up_submit = CTkButton(sign_up_frame, text="Submit", command=submit)
+    sign_up_submit = CTkButton(sign_up_frame, text="Submit", command=submit,font = Bfont)
     sign_up_submit.pack(pady=20)
 
 def start():
@@ -171,7 +171,7 @@ def start():
 def end():
     end_win = CTk()
     end_win.title("End")
-    end_win.geometry("650x250")
+    end_win.geometry("650x350")
     end_frame = CTkFrame(master = end_win, fg_color = "transparent")
     end_frame.pack(expand=True, fill="both", padx=20, pady=20)
     end_frame.place(in_=end_win, anchor="c", relx=0.5, rely=0.5)
@@ -192,7 +192,7 @@ def end():
                 cursor.execute(f"select entry_time,exit_time,price from parkinginfo where carID = {carID}")
                 entry_time,exit_time,price = cursor.fetchone()
 
-                end_label = CTkLabel(master = end_frame, text = f"The vehicle with ID: {carID} entered at {entry_time} and exited at : {exit_time}.",font = Standard)
+                end_label = CTkLabel(master = end_frame, text = f"The vehicle with ID: {carID} \n entered at {entry_time} and \nexited at : {exit_time}.\n",font = Standard)
                 end_label.pack()
                 time_difference = exit_time - entry_time
                 from datetime import datetime
@@ -200,7 +200,7 @@ def end():
                 cost = round((float(price)*hours),2)
             
                 messagebox.showinfo("Success", "Exited")
-                cost_label = CTkLabel(master = end_frame, text = f"Cost - {cost} AED",font=Bfont).pack()
+                cost_label = CTkLabel(master = end_frame, text = f"Cost : {cost} AED",font=Standard).pack()
             except Exception as e:
                 messagebox.showerror("Error", "Not found")
 
@@ -211,18 +211,18 @@ def end():
     end_win.mainloop()
 
 
-auth_frame = CTkFrame(master=root, height=300, width=350, fg_color="transparent")
-auth_frame.pack(expand=True, fill="y", padx=20, pady=50)
-auth_frame.place(in_=root, anchor="center")
+auth_frame = CTkFrame(master=root, fg_color="transparent")
+auth_frame.pack(expand=True, fill="both", padx=20, pady=50)
+auth_frame.place(in_=root, anchor="c",relx = 0.5, rely = 0.5)
 auth_label = CTkLabel(
     master=auth_frame, text="MySQL Password", font=Standard, padx=10, pady=10
 )
 auth_label.pack()
-auth_entry = CTkEntry(master=auth_frame, show="•", font=("Arial", 20))
+auth_entry = CTkEntry(master=auth_frame, show="•", font=("Verdana",20))
 auth_entry.pack()
 auth_button = CTkButton(
     master=auth_frame,
-    text="Authenticate",
+    text="Submit",
     command=auth,
     font=Standard,
     corner_radius=180,
