@@ -5,12 +5,14 @@ from tkinter import ttk
 
 root = CTk()
 root.title("Parking Management System")
-set_default_color_theme("green")
+set_default_color_theme("color.json")
 set_appearance_mode("light")
 Heading = CTkFont(family="Arial Black", size=34, weight="bold")
-Bfont = CTkFont(family="Verdana", size=22, weight="bold")
+Bfont = CTkFont(family="Arial", size=19, weight="bold")
+
 Standard = CTkFont(family="Verdana", size=19, weight="normal")
-root.geometry('450x450')
+root.geometry("450x450")
+
 
 def auth():
     global con, cursor
@@ -36,13 +38,20 @@ def auth():
             sign_frame.place(in_=root, anchor="c", relx=0.5, rely=0.5)
             return con, cursor
     except Exception as e:
-        if str(e) == "1045 (28000): Access denied for user 'root'@'localhost' (using password: YES)":
-            messagebox.showerror("Failed Authentication","Wrong password for Mysql! Try Again")
+        if (
+            str(e)
+            == "1045 (28000): Access denied for user 'root'@'localhost' (using password: YES)"
+        ):
+            messagebox.showerror(
+                "Failed Authentication", "Wrong password for Mysql! Try Again"
+            )
         else:
             print(e)
             messagebox.showerror("Error", f"Unexpected Error. \n Error:{e}")
 
+
 currentUser = ""
+
 
 def sign_in():
     cursor.execute("select * from user_details;")
@@ -92,6 +101,7 @@ def sign_in():
         )
         sign_in_submit.pack(pady=10)
 
+
 def sign_up():
     global currentUser
     sign_frame.destroy()
@@ -105,21 +115,17 @@ def sign_up():
     password_label.pack()
     password_entry = CTkEntry(master=sign_up_frame, show="•", font=Standard)
     password_entry.pack(pady=10)
-    
 
     def submit():
         uname = uname_entry.get()
         password = password_entry.get()
         try:
-            if (
-                uname != ""
-                and password != ""
-            ):
+            if uname != "" and password != "":
                 cursor.execute(
                     f"INSERT INTO user_details (uname,password) VALUES ('{uname}','{password}');"
                 )
                 con.commit()
-                
+
                 currentUser = uname
 
                 sign_up_frame.destroy()
@@ -127,107 +133,135 @@ def sign_up():
         except Exception as e:
             messagebox.showerror("Error", f"Username not available \n {e}")
 
-    sign_up_submit = CTkButton(sign_up_frame, text="Submit", command=submit,font = Bfont)
+    sign_up_submit = CTkButton(sign_up_frame, text="Submit", command=submit, font=Bfont)
     sign_up_submit.pack(pady=20)
+
 
 def start():
     start_win = CTk()
     start_win.geometry("200x300")
     start_win.title("Start")
 
-    start_frame = CTkFrame(master = start_win, fg_color = "transparent")
+    start_frame = CTkFrame(master=start_win, fg_color="transparent")
     start_frame.pack(expand=True, fill="both", padx=20, pady=20)
     start_frame.place(in_=start_win, anchor="c", relx=0.5, rely=0.5)
-    carID_entry = CTkEntry(master = start_frame,font = Standard)
-    price_entry = CTkEntry(master = start_frame,font = Standard)
-    carID_label = CTkLabel(master = start_frame,text = "Vehicle ID",font = Standard)
-    price_label = CTkLabel(master = start_frame,text = "Price per hour",font = Standard)
+    carID_entry = CTkEntry(master=start_frame, font=Standard)
+    price_entry = CTkEntry(master=start_frame, font=Standard)
+    carID_label = CTkLabel(master=start_frame, text="Vehicle ID", font=Standard)
+    price_label = CTkLabel(master=start_frame, text="Price per hour", font=Standard)
+    start_btn.configure(state="disabled")
     carID_label.pack()
     carID_entry.pack()
     price_label.pack()
     price_entry.pack()
+
     def submit():
-        
         cursor.execute("select * from parkinginfo")
         if len(cursor.fetchall()) == 0:
             pID = 1
-        else:    
+        else:
             cursor.execute("select pID from parkinginfo order by pID desc limit 1;")
             pID = int(cursor.fetchall()[0][0]) + 1
         carID = carID_entry.get()
         price = float(price_entry.get())
         try:
-            cursor.execute(f"insert into parkinginfo(pID,carID,price,entry_time) values({pID}, '{carID}',{price}, NOW());")
-            
-            con.commit()
-            messagebox.showinfo("Successful",f"Started Parking for Vehicle : {carID} at parking spot: {pID}")
-        except Exception as e:
-            messagebox.showerror("Error","Vehicle already entered.")
-        
+            cursor.execute(
+                f"insert into parkinginfo(pID,carID,price,entry_time) values({pID}, '{carID}',{price}, NOW());"
+            )
 
-    start_button = CTkButton(master = start_frame,text = 'Start',command = submit, font = Bfont)
-    start_button.pack(pady =5)
+            con.commit()
+            messagebox.showinfo(
+                "Successful",
+                f"Started Parking for Vehicle : {carID} at parking spot: {pID}",
+            )
+        except Exception as e:
+            messagebox.showerror("Error", "Vehicle already entered.")
+
+    start_button = CTkButton(
+        master=start_frame, text="Start", command=submit, font=Bfont
+    )
+    start_button.pack(pady=5)
     start_win.mainloop()
+
+
 def end():
     end_win = CTk()
     end_win.title("End")
     end_win.geometry("650x350")
-    end_frame = CTkFrame(master = end_win, fg_color = "transparent")
-    end_frame.pack(expand=True, fill="both", padx=20, pady=20)
-    end_frame.place(in_=end_win, anchor="c", relx=0.5, rely=0.5)
+    end_frame = CTkFrame(master=end_win, fg_color="transparent")
+
     ID_label = CTkLabel(master=end_frame, text="Vehicle ID:", font=Standard)
     ID_label.pack()
-    cost_label = CTkLabel(master = end_frame, text = f"",font=("Times",18,"bold"))
-    
+
     cursor.execute("SELECT carID FROM parkinginfo")
     allIDs = [row[0] for row in cursor.fetchall()]
-    ID_var = StringVar(master = end_frame, value="Select Vehicle ID")
-    ID_menu = CTkOptionMenu(master = end_frame, values=allIDs, variable=ID_var)
+    ID_var = StringVar(master=end_frame, value="Select Vehicle ID")
+    ID_menu = CTkOptionMenu(master=end_frame, values=allIDs, variable=ID_var)
     ID_menu.pack(pady=10)
-    end_label = CTkLabel(master = end_frame,text = "",font = ("Verdana", 16))
-    end_label.pack()
+    output_frame = CTkFrame(master=end_frame, fg_color="transparent")
+    end_label = CTkLabel(master=output_frame, text="", font=("Verdana", 16))
+    cost_label = CTkLabel(
+        master=output_frame, text=f"", font=("Arial Black", 24, "bold")
+    )
+    end_label.pack(pady=5)
     cost_label.pack()
+
     def submit():
         carID = ID_var.get()
-        cursor.execute(f"select entry_time,exit_time,price from parkinginfo where carID = '{carID}'")
-        
- 
-        try:
-            entry_time,exit_time,price = cursor.fetchone()
-            cursor.execute(f'update parkinginfo set exit_time = NOW() where carID = "{carID}";')
-            con.commit()
-            cursor.execute(f"select entry_time,exit_time,price from parkinginfo where carID = '{carID}'")
-            entry_time,exit_time,price = cursor.fetchone()
+        cursor.execute(
+            f"select entry_time,exit_time,price from parkinginfo where carID = '{carID}'"
+        )
 
-            end_label.configure( text = f"The vehicle with ID: {carID} \n entered at {entry_time} and \nexited at : {exit_time}.\n")
+        try:
+            entry_time, exit_time, price = cursor.fetchone()
+            cursor.execute(
+                f'update parkinginfo set exit_time = NOW() where carID = "{carID}";'
+            )
+            con.commit()
+            cursor.execute(
+                f"select entry_time,exit_time,price from parkinginfo where carID = '{carID}'"
+            )
+            entry_time, exit_time, price = cursor.fetchone()
+            output_frame.configure(
+                fg_color="#F0E4CE",
+                corner_radius=22,
+                border_width=2,
+                border_color="#E2C5A8",
+            )
+            end_label.configure(
+                text=f"The vehicle with ID: {carID} \n entered at : {entry_time} and \nexited at : {exit_time}.\n",
+                font=Standard,
+            )
             end_label.pack()
             time_difference = exit_time - entry_time
             from datetime import datetime
+
             hours = time_difference.total_seconds() / 3600.0
-            cost = round((float(price)*hours),2)
-            
-            cost_label.configure(text = f"Cost : {cost} AED")
+            cost = round((float(price) * hours), 2)
+
+            cost_label.configure(text=f"Cost : {cost} AED")
             cursor.execute(f"DELETE from parkinginfo where carID='{carID}'")
             con.commit()
             return
         except Exception as e:
             messagebox.showerror("Error", f"Not found \n{e}")
 
-    end_button = CTkButton(master = end_frame,text = 'End',command = submit, font = Bfont)
-    end_button.pack(pady =5)
-    
-    
+    end_button = CTkButton(master=end_frame, text="End", command=submit, font=Bfont)
+    end_button.pack(pady=5)
+    output_frame.pack(ipadx=20, ipady=12, expand=True, fill="y")
+    end_frame.pack(expand=True, fill="both", padx=20, pady=20)
+    end_frame.place(in_=end_win, anchor="c", relx=0.5, rely=0.5)
     end_win.mainloop()
 
 
 auth_frame = CTkFrame(master=root, fg_color="transparent")
 auth_frame.pack(expand=True, fill="both", padx=20, pady=50)
-auth_frame.place(in_=root, anchor="c",relx = 0.5, rely = 0.5)
+auth_frame.place(in_=root, anchor="c", relx=0.5, rely=0.5)
 auth_label = CTkLabel(
     master=auth_frame, text="MySQL Password", font=Standard, padx=10, pady=10
 )
 auth_label.pack()
-auth_entry = CTkEntry(master=auth_frame, show="•", font=("Verdana",20))
+auth_entry = CTkEntry(master=auth_frame, show="•", font=("Verdana", 20))
 auth_entry.pack()
 auth_button = CTkButton(
     master=auth_frame,
@@ -236,13 +270,13 @@ auth_button = CTkButton(
     font=Standard,
     corner_radius=180,
 )
-auth_button.pack(pady=20, padx=5)
+auth_button.pack(pady=20, padx=5, ipadx=2, ipady=5)
 auth_frame.pack()
 
 sign_frame = CTkFrame(master=root, width=300, height=300, fg_color="transparent")
-sign_in_btn = CTkButton(master=sign_frame, text="Sign in", command=sign_in, font=Bfont)
+sign_in_btn = CTkButton(master=sign_frame, text="Sign in", command=sign_in, font=("Arial", 25, "bold"))
 sign_in_btn.pack(pady=10, padx=30)
-sign_up_btn = CTkButton(master=sign_frame, text="Sign up", command=sign_up, font=Bfont)
+sign_up_btn = CTkButton(master=sign_frame, text="Sign up", command=sign_up, font=("Arial", 25, "bold"))
 sign_up_btn.pack(pady=10, padx=30)
 
 # sign IN
@@ -255,9 +289,10 @@ sign_up_frame = CTkFrame(master=root, fg_color="transparent")
 sign_up_h1 = CTkLabel(master=sign_up_frame, text="Sign up", font=Heading)
 sign_up_h1.pack()
 
-#menu 
+# menu
 menu_frame = CTkFrame(master=root, fg_color="transparent")
-end_btn = CTkButton(master=menu_frame, text="End Parking Time", command=end, font=Bfont)
-start_btn = CTkButton(master=menu_frame, text="Start Parking Time", command=start, font=Bfont)
+end_btn = CTkButton(master=menu_frame, text="End Parking Time", command=end, font=("Arial", 25, "bold"))
+start_btn = CTkButton(
+    master=menu_frame, text="Start Parking Time", command=start,font=("Arial", 25, "bold")
+)
 root.mainloop()
-
