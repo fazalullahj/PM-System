@@ -1,3 +1,3 @@
 # PM-System
-# For a friend
+## For a friend
 Simple Parking Management system
