@@ -28,9 +28,11 @@ def auth():
         cursor.execute(
             "create table if not exists user_details(uname varchar(25) primary key, password varchar(25));"
         )
-        # product
         cursor.execute(
             "create table if not exists parkinginfo(pID int(20) , carID varchar(20) primary key, price float(10,2), entry_time datetime , exit_time datetime);"
+        )
+        cursor.execute(
+            "create table if not exists history(ID int(20) primary key,pID int(20) , carID varchar(20), price float(10,2), entry_time datetime , exit_time datetime ); "
         )
         if con.is_connected():
             auth_frame.destroy()
@@ -91,6 +93,7 @@ def sign_in():
                     sign_in_frame.destroy()
                     start_btn.pack(pady=5)
                     end_btn.pack(pady=5)
+                    view_btn.pack(pady=5)
             except Exception as e:
                 print(e)
                 print("Error!")
@@ -139,7 +142,7 @@ def sign_up():
 
 def start():
     start_win = CTk()
-    start_win.geometry("200x300")
+    start_win.geometry("300x300")
     start_win.title("Start")
 
     start_frame = CTkFrame(master=start_win, fg_color="transparent")
@@ -148,12 +151,11 @@ def start():
     carID_entry = CTkEntry(master=start_frame, font=Standard)
     price_entry = CTkEntry(master=start_frame, font=Standard)
     carID_label = CTkLabel(master=start_frame, text="Vehicle ID", font=Standard)
-    price_label = CTkLabel(master=start_frame, text="Price per hour", font=Standard)
+    price_label = CTkLabel(master=start_frame, text="Price per hour : 2 AED", font=Standard)
     start_btn.configure(state="disabled")
     carID_label.pack()
     carID_entry.pack()
     price_label.pack()
-    price_entry.pack()
 
     def submit():
         cursor.execute("select * from parkinginfo")
@@ -163,7 +165,7 @@ def start():
             cursor.execute("select pID from parkinginfo order by pID desc limit 1;")
             pID = int(cursor.fetchall()[0][0]) + 1
         carID = carID_entry.get()
-        price = float(price_entry.get())
+        price = 2
         try:
             cursor.execute(
                 f"insert into parkinginfo(pID,carID,price,entry_time) values({pID}, '{carID}',{price}, NOW());"
@@ -182,7 +184,34 @@ def start():
     )
     start_button.pack(pady=5)
     start_win.mainloop()
+def view():
+    query = "SELECT * FROM history;"
+    cursor.execute(query)
+    allhistorys = cursor.fetchall()
+    column_names = ["ID","Plot No.","Vehicle ID", "Price","Entry Time","Exit time"]
+    if len(allhistorys) == 0:
+        messagebox.showerror("Error", "No history available")
+    else:
+        data_view = CTk()
+        data_view.title("View history")
+        data_view.geometry("700x300")
+        tree = ttk.Treeview(master=data_view, columns=column_names, show="headings")
 
+        for col in column_names:
+            tree.heading(col, text=col)
+            tree.column(col, width=100)
+
+        for history in allhistorys:
+            tree.insert("", "end", values=history)
+
+        scrollbar = ttk.Scrollbar(data_view, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+
+        tree.pack(fill="both", expand=True)
+        if len(allhistorys) > 20:
+            scrollbar.pack(side="right", fill="y")
+
+        data_view.mainloop()
 
 def end():
     end_win = CTk()
@@ -237,10 +266,22 @@ def end():
             from datetime import datetime
 
             hours = time_difference.total_seconds() / 3600.0
-            cost = round((float(price) * hours), 2)
+            cost = price * round(hours)
 
             cost_label.configure(text=f"Cost : {cost} AED")
-            cursor.execute(f"DELETE from parkinginfo where carID='{carID}'")
+            try:
+                cursor.execute("select max(ID) from history")
+                key = cursor.fetchone()[0] + 1
+            except Exception as e:
+                print(e)
+                key = 1
+            cursor.execute(f"select pID,carID,price,entry_time from parkinginfo where carID = '{carID}'")
+            row = cursor.fetchone()
+            pID,carID,price,entry_time,= row[0],row[1],row[2],row[3]
+            
+            cursor.execute(f"insert into history values({key},{pID},'{carID}',{price},'{entry_time}',NOW())")
+            con.commit()
+            cursor.execute(f"DELETE from parkinginfo where carID = '{carID}'")
             con.commit()
             return
         except Exception as e:
@@ -294,5 +335,8 @@ menu_frame = CTkFrame(master=root, fg_color="transparent")
 end_btn = CTkButton(master=menu_frame, text="End Parking Time", command=end, font=("Arial", 25, "bold"))
 start_btn = CTkButton(
     master=menu_frame, text="Start Parking Time", command=start,font=("Arial", 25, "bold")
+)
+view_btn = CTkButton(
+    master=menu_frame, text="View History", command=view,font=("Arial", 25, "bold")
 )
 root.mainloop()
