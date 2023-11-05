@@ -151,8 +151,10 @@ def start():
     carID_entry = CTkEntry(master=start_frame, font=Standard)
     price_entry = CTkEntry(master=start_frame, font=Standard)
     carID_label = CTkLabel(master=start_frame, text="Vehicle ID", font=Standard)
-    price_label = CTkLabel(master=start_frame, text="Price per hour : 2 AED", font=Standard)
-    start_btn.configure(state="disabled")
+    price_label = CTkLabel(
+        master=start_frame, text="Price per hour : 2 AED", font=Standard
+    )
+    # start_btn.configure(state="disabled")
     carID_label.pack()
     carID_entry.pack()
     price_label.pack()
@@ -176,6 +178,7 @@ def start():
                 "Successful",
                 f"Started Parking for Vehicle : {carID} at parking spot: {pID}",
             )
+            carID_entry.delete(0,END)
         except Exception as e:
             messagebox.showerror("Error", "Vehicle already entered.")
 
@@ -184,11 +187,13 @@ def start():
     )
     start_button.pack(pady=5)
     start_win.mainloop()
+
+
 def view():
     query = "SELECT * FROM history;"
     cursor.execute(query)
     allhistorys = cursor.fetchall()
-    column_names = ["ID","Plot No.","Vehicle ID", "Price","Entry Time","Exit time"]
+    column_names = ["ID", "Plot No.", "Vehicle ID", "Price", "Entry Time", "Exit time"]
     if len(allhistorys) == 0:
         messagebox.showerror("Error", "No history available")
     else:
@@ -212,6 +217,7 @@ def view():
             scrollbar.pack(side="right", fill="y")
 
         data_view.mainloop()
+
 
 def end():
     end_win = CTk()
@@ -275,11 +281,25 @@ def end():
             except Exception as e:
                 print(e)
                 key = 1
-            cursor.execute(f"select pID,carID,price,entry_time from parkinginfo where carID = '{carID}'")
+            cursor.execute(
+                f"select pID,carID,price,entry_time from parkinginfo where carID = '{carID}'"
+            )
             row = cursor.fetchone()
-            pID,carID,price,entry_time,= row[0],row[1],row[2],row[3]
-            
-            cursor.execute(f"insert into history values({key},{pID},'{carID}',{price},'{entry_time}',NOW())")
+            (
+                pID,
+                carID,
+                price,
+                entry_time,
+            ) = (
+                row[0],
+                row[1],
+                row[2],
+                row[3],
+            )
+
+            cursor.execute(
+                f"insert into history values({key},{pID},'{carID}',{price},'{entry_time}',NOW())"
+            )
             con.commit()
             cursor.execute(f"DELETE from parkinginfo where carID = '{carID}'")
             con.commit()
@@ -315,9 +335,13 @@ auth_button.pack(pady=20, padx=5, ipadx=2, ipady=5)
 auth_frame.pack()
 
 sign_frame = CTkFrame(master=root, width=300, height=300, fg_color="transparent")
-sign_in_btn = CTkButton(master=sign_frame, text="Sign in", command=sign_in, font=("Arial", 25, "bold"))
+sign_in_btn = CTkButton(
+    master=sign_frame, text="Sign in", command=sign_in, font=("Arial", 25, "bold")
+)
 sign_in_btn.pack(pady=10, padx=30)
-sign_up_btn = CTkButton(master=sign_frame, text="Sign up", command=sign_up, font=("Arial", 25, "bold"))
+sign_up_btn = CTkButton(
+    master=sign_frame, text="Sign up", command=sign_up, font=("Arial", 25, "bold")
+)
 sign_up_btn.pack(pady=10, padx=30)
 
 # sign IN
@@ -332,11 +356,16 @@ sign_up_h1.pack()
 
 # menu
 menu_frame = CTkFrame(master=root, fg_color="transparent")
-end_btn = CTkButton(master=menu_frame, text="End Parking Time", command=end, font=("Arial", 25, "bold"))
+end_btn = CTkButton(
+    master=menu_frame, text="End Parking Time", command=end, font=("Arial", 25, "bold")
+)
 start_btn = CTkButton(
-    master=menu_frame, text="Start Parking Time", command=start,font=("Arial", 25, "bold")
+    master=menu_frame,
+    text="Start Parking Time",
+    command=start,
+    font=("Arial", 25, "bold"),
 )
 view_btn = CTkButton(
-    master=menu_frame, text="View History", command=view,font=("Arial", 25, "bold")
+    master=menu_frame, text="View History", command=view, font=("Arial", 25, "bold")
 )
 root.mainloop()
