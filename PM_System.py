@@ -5,15 +5,14 @@ from tkinter import ttk
 
 root = CTk()
 root.title("Parking Management System")
-set_default_color_theme("color.json")
 set_appearance_mode("light")
+set_default_color_theme("color.json")
 Heading = CTkFont(family="Arial Black", size=34, weight="bold")
 Bfont = CTkFont(family="Arial", size=19, weight="bold")
 
 Standard = CTkFont(family="Verdana", size=19, weight="normal")
 root.geometry("450x450")
-
-
+max_spots = 10
 def auth():
     global con, cursor
     try:
@@ -23,8 +22,6 @@ def auth():
         cursor.execute("CREATE DATABASE IF NOT EXISTS pmsystem;")
         cursor.execute("USE pmsystem;")
 
-        # all tables creation-->
-        # user details
         cursor.execute(
             "create table if not exists user_details(uname varchar(25) primary key, password varchar(25));"
         )
@@ -51,9 +48,7 @@ def auth():
             print(e)
             messagebox.showerror("Error", f"Unexpected Error. \n Error:{e}")
 
-
 currentUser = ""
-
 
 def sign_in():
     cursor.execute("select * from user_details;")
@@ -90,6 +85,10 @@ def sign_in():
                     sign_in_label.pack()
                     menu_frame.pack(expand=True, fill="both", padx=20, pady=20)
                     menu_frame.place(in_=root, anchor="c", relx=0.5, rely=0.5)
+                    cursor.execute("select count(entry_time) from parkinginfo;")
+                    spots_taken = cursor.fetchall()[0][0]
+                    spots_available = max_spots - spots_taken
+                    spots_label.configure(text=f"{spots_available} parking spots left")
                     sign_in_frame.destroy()
                     start_btn.pack(pady=5)
                     end_btn.pack(pady=5)
@@ -103,7 +102,6 @@ def sign_in():
             master=sign_in_frame, text="Submit", command=submit, font=Bfont
         )
         sign_in_submit.pack(pady=10)
-
 
 def sign_up():
     global currentUser
@@ -139,56 +137,66 @@ def sign_up():
     sign_up_submit = CTkButton(sign_up_frame, text="Submit", command=submit, font=Bfont)
     sign_up_submit.pack(pady=20)
 
-
 def start():
-    start_win = CTk()
-    start_win.geometry("300x300")
-    start_win.title("Start")
+    global spots_label
+    cursor.execute("select count(entry_time) from parkinginfo;")
+    spots_taken = cursor.fetchall()[0][0]
+    spots_available = max_spots - spots_taken
+    if  spots_available >0:
+        start_win = CTk()
+        start_win.geometry("300x300")
+        start_win.title("Start")
 
-    start_frame = CTkFrame(master=start_win, fg_color="transparent")
-    start_frame.pack(expand=True, fill="both", padx=20, pady=20)
-    start_frame.place(in_=start_win, anchor="c", relx=0.5, rely=0.5)
-    carID_entry = CTkEntry(master=start_frame, font=Standard)
-    price_entry = CTkEntry(master=start_frame, font=Standard)
-    carID_label = CTkLabel(master=start_frame, text="Vehicle ID", font=Standard)
-    price_label = CTkLabel(
-        master=start_frame, text="Price per hour : 2 AED", font=Standard
-    )
-    # start_btn.configure(state="disabled")
-    carID_label.pack()
-    carID_entry.pack()
-    price_label.pack()
+        start_frame = CTkFrame(master=start_win, fg_color="transparent")
+        start_frame.pack(expand=True, fill="both", padx=20, pady=20)
+        start_frame.place(in_=start_win, anchor="c", relx=0.5, rely=0.5)
+        carID_entry = CTkEntry(master=start_frame, font=Standard)
+        price_entry = CTkEntry(master=start_frame, font=Standard)
+        carID_label = CTkLabel(master=start_frame, text="Vehicle ID", font=Standard)
+        price_label = CTkLabel(
+            master=start_frame, text="Price per hour : 2 AED", font=Standard
+        )
+        carID_label.pack()
+        carID_entry.pack()
+        price_label.pack()
 
-    def submit():
-        cursor.execute("select * from parkinginfo")
-        if len(cursor.fetchall()) == 0:
-            pID = 1
-        else:
-            cursor.execute("select pID from parkinginfo order by pID desc limit 1;")
-            pID = int(cursor.fetchall()[0][0]) + 1
-        carID = carID_entry.get()
-        price = 2
-        try:
-            cursor.execute(
-                f"insert into parkinginfo(pID,carID,price,entry_time) values({pID}, '{carID}',{price}, NOW());"
-            )
+        def submit():
+            cursor.execute("select * from parkinginfo")
+            if len(cursor.fetchall()) == 0:
+                pID = 1
+            else:
+                cursor.execute("select pID from parkinginfo order by pID desc limit 1;")
+                pID = int(cursor.fetchall()[0][0]) + 1
+            carID = carID_entry.get()
+            price = 2
+            try:
+                cursor.execute(
+                    f"insert into parkinginfo(pID,carID,price,entry_time) values({pID}, '{carID}',{price}, NOW());"
+                )
 
-            con.commit()
-            messagebox.showinfo(
-                "Successful",
-                f"Started Parking for Vehicle : {carID} at parking spot: {pID}",
-            )
-            carID_entry.delete(0,END)
-        except Exception as e:
-            messagebox.showerror("Error", "Vehicle already entered.")
+                con.commit()
+                messagebox.showinfo(
+                    "Successful",
+                    f"Started Parking for Vehicle : {carID} at parking spot: {pID}",
+                )
+                carID_entry.delete(0, END)
+                start_win.destroy()
+            except Exception as e:
+                messagebox.showerror("Error", "Vehicle already entered.")
 
-    start_button = CTkButton(
-        master=start_frame, text="Start", command=submit, font=Bfont
-    )
-    start_button.pack(pady=5)
-    start_win.mainloop()
+            # Update spots_label text after starting parking
+            cursor.execute("select count(entry_time) from parkinginfo;")
+            spots_taken = cursor.fetchall()[0][0]
+            spots_available = max_spots - spots_taken
+            spots_label.configure(text=f"{spots_available} parking spots left")
 
-
+        start_button = CTkButton(
+            master=start_frame, text="Start", command=submit, font=Bfont
+        )
+        start_button.pack(pady=5)
+        start_win.mainloop()
+    else:
+        messagebox.showwarning(title="Warning!", message="No available parking spots.")
 def view():
     query = "SELECT * FROM history;"
     cursor.execute(query)
@@ -218,8 +226,8 @@ def view():
 
         data_view.mainloop()
 
-
 def end():
+    global spots_label
     end_win = CTk()
     end_win.title("End")
     end_win.geometry("650x350")
@@ -303,6 +311,11 @@ def end():
             con.commit()
             cursor.execute(f"DELETE from parkinginfo where carID = '{carID}'")
             con.commit()
+            end_win.destroy()
+            cursor.execute("select count(entry_time) from parkinginfo")
+            spots_taken = cursor.fetchall()[0][0]
+            spots_available = max_spots - spots_taken
+            spots_label.configure(text=f"{spots_available} parking spots left")
             return
         except Exception as e:
             messagebox.showerror("Error", f"Not found \n{e}")
@@ -313,7 +326,6 @@ def end():
     end_frame.pack(expand=True, fill="both", padx=20, pady=20)
     end_frame.place(in_=end_win, anchor="c", relx=0.5, rely=0.5)
     end_win.mainloop()
-
 
 auth_frame = CTkFrame(master=root, fg_color="transparent")
 auth_frame.pack(expand=True, fill="both", padx=20, pady=50)
@@ -344,18 +356,17 @@ sign_up_btn = CTkButton(
 )
 sign_up_btn.pack(pady=10, padx=30)
 
-# sign IN
 sign_in_frame = CTkFrame(master=root, fg_color="transparent")
 sign_in_h1 = CTkLabel(master=sign_in_frame, text="Sign in", font=Heading)
 sign_in_h1.pack()
 
-# sign UP
 sign_up_frame = CTkFrame(master=root, fg_color="transparent")
 sign_up_h1 = CTkLabel(master=sign_up_frame, text="Sign up", font=Heading)
 sign_up_h1.pack()
 
-# menu
 menu_frame = CTkFrame(master=root, fg_color="transparent")
+spots_label = CTkLabel(master=menu_frame, text=" ", font=Standard)
+spots_label.pack()
 end_btn = CTkButton(
     master=menu_frame, text="End Parking Time", command=end, font=("Arial", 25, "bold")
 )
